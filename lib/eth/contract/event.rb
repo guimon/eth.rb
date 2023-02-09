@@ -16,7 +16,6 @@
 
 # Provides the {Eth} module.
 module Eth
-
   # Provide classes for contract event.
   class Contract::Event
     attr_accessor :name, :signature, :input_types, :inputs, :event_string, :address
@@ -25,10 +24,10 @@ module Eth
     #
     # @param data [Hash] contract event data.
     def initialize(data)
-      @name = data["name"]
-      @input_types = data["inputs"].collect { |x| x["type"] }
-      @inputs = data["inputs"].collect { |x| x["name"] }
-      @event_string = "#{@name}(#{@input_types.join(",")})"
+      @name = data['name']
+      @input_types = data['inputs'].collect { |x| x['type'] }
+      @inputs = data['inputs'].collect { |x| x['name'] }
+      @event_string = "#{@name}(#{flattened_input_types(data['inputs']).join(',')})"
       @signature = Digest::Keccak.hexdigest(@event_string, 256)
     end
 
@@ -37,6 +36,18 @@ module Eth
     # @param address [String] contract address.
     def set_address(address)
       @address = address.nil? ? nil : Eth::Address.new(address).address
+    end
+
+    private
+
+    def flattened_input_types(inputs)
+      inputs.map do |input|
+        if input['type'].starts_with?('tuple')
+          "(#{flattened_input_types(input['components']).join(',')})"
+        else
+          input['type']
+        end
+      end
     end
   end
 end
